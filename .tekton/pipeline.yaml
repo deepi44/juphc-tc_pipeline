@@ -1,0 +1,36 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: tax-calculator-pipeline
+spec:
+  workspaces:
+    - name: shared-workspace
+
+  tasks:
+    - name: npminstall
+      taskRef:
+        name: npm-install
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: tests
+      runAfter:
+        - npminstall
+      taskRef:
+        name: jasmine-test
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: build
+      runAfter:
+        - tests
+      taskSpec:
+        workspaces:
+          - name: source
+        steps:
+          - name: docker-build
+            image: docker:20.10
+            script: |
+              docker build -t tax-calculator .
